@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model users {
+  id           Int              @id @default(autoincrement())
+  full_name    String           @db.VarChar(50)
+  age          Int
+  email        String           @db.VarChar(50)
+  password     String           @db.VarChar(255)
+  avatar       String?          @db.VarChar(255)
+  is_remove    users_is_remove? @default(false)
+  comments     comments[]
+  images       images[]
+  saved_images saved_images[]
+}
+
+model comments {
+  id            Int                 @id @default(autoincrement())
+  image_id      Int?                @default(0)
+  content       String              @db.VarChar(255)
+  created_by_id Int?                @default(0)
+  date          DateTime            @db.DateTime(0)
+  is_remove     comments_is_remove? @default(false)
+  created_by    users?              @relation(fields: [created_by_id], references: [id], map: "comments_ibfk_10")
+  image         images?             @relation(fields: [image_id], references: [id], map: "comments_ibfk_2")
+
+  @@index([created_by_id], map: "created_by")
+  @@index([image_id], map: "image_id")
+}
+
+model images {
+  id            Int               @id @default(autoincrement())
+  name          String            @db.VarChar(255)
+  file_name     String            @db.VarChar(255)
+  description   String?           @db.VarChar(255)
+  created_by_id Int?              @default(0)
+  is_remove     images_is_remove? @default(false)
+  comments      comments[]
+  created_by    users?            @relation(fields: [created_by_id], references: [id], map: "images_ibfk_3")
+  saved_images  saved_images[]
+
+  @@index([created_by_id], map: "created_by")
+}
+
+model saved_images {
+  id          Int                     @id @default(autoincrement())
+  image_id    Int?                    @default(0)
+  saved_by_id Int?                    @default(0)
+  is_remove   saved_images_is_remove? @default(false)
+  images      images?                 @relation(fields: [image_id], references: [id], map: "saved_images_ibfk_2")
+  users       users?                  @relation(fields: [saved_by_id], references: [id], map: "saved_images_ibfk_4")
+
+  @@index([image_id], map: "image_id")
+  @@index([saved_by_id], map: "saved_by")
+}
+
+enum saved_images_is_remove {
+  true
+  false
+}
+
+enum images_is_remove {
+  true
+  false
+}
+
+enum comments_is_remove {
+  true
+  false
+}
+
+enum users_is_remove {
+  true
+  false
+}
