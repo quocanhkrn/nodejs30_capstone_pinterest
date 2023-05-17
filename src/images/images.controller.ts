@@ -29,6 +29,7 @@ import {
   ApiQuery,
   ApiExcludeEndpoint,
   ApiBody,
+  ApiConsumes,
 } from '@nestjs/swagger';
 
 @ApiTags('Images')
@@ -76,6 +77,18 @@ export class ImagesController {
   //   return res.sendFile(path.join(process.cwd(), 'public/imgs/' + fileName));
   // }
 
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        description: { type: 'string' },
+        image: { type: 'string', format: 'binary' },
+        created_by_id: { type: 'integer' },
+      },
+    },
+  })
   @Post('upload')
   @UseInterceptors(FileInterceptor('image', imageUploadOptions))
   async create(

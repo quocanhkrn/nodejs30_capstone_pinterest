@@ -18,7 +18,13 @@ import { imageUploadOptions } from 'src/constants';
 import { JwtAuthGuard } from 'src/auth/strategies/guards/jwt-auth.guard';
 import { handleErr } from '../constants';
 import { User } from './entities/user.entity';
-import { ApiHeader, ApiQuery, ApiTags, ApiConsumes } from '@nestjs/swagger';
+import {
+  ApiHeader,
+  ApiQuery,
+  ApiTags,
+  ApiConsumes,
+  ApiBody,
+} from '@nestjs/swagger';
 
 @ApiTags('Users')
 @ApiHeader({
@@ -46,6 +52,22 @@ export class UsersController {
     }
   }
 
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        full_name: { type: 'string' },
+        age: { type: 'integer' },
+        email: { type: 'string' },
+        image: {
+          type: 'string',
+          format: 'binary',
+          description: `Change the user's avatar here`,
+        },
+      },
+    },
+  })
   @Put('update/:id')
   @UseInterceptors(FileInterceptor('image', imageUploadOptions))
   async update(
