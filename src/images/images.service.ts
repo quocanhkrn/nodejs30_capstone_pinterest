@@ -2,37 +2,48 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateImageDto } from './dto/create-image.dto';
 import { UpdateImageDto } from './dto/update-image.dto';
 import { PrismaClient } from '@prisma/client';
+import { ResponseTemplate } from 'src/response.typeface';
+import { Image } from './entities/image.entity';
 
 @Injectable()
 export class ImagesService {
-  prisma = new PrismaClient();
+  private readonly prisma = new PrismaClient();
+  private readonly responseTemplate = new ResponseTemplate();
 
-  async create(createImage: CreateImageDto) {
-    let image = await this.prisma.images.create({ data: createImage });
+  async create(createImage: CreateImageDto): Promise<Image> {
+    const { is_remove, ...image }: Image = await this.prisma.images.create({
+      data: createImage,
+    });
     return image;
   }
 
-  async findAll(searchKeyword: string = undefined) {
-    let data = await this.prisma.images.findMany({
-      where: { name: { contains: searchKeyword }, is_remove: 'false' },
-    });
-    return data;
-  }
-
-  async findAllByUserID(userID: number, searchKeyword: string = undefined) {
-    let data = await this.prisma.images.findMany({
+  async findAll(
+    userID: number,
+    searchKeyword: string = undefined,
+  ): Promise<Image[]> {
+    const data: Image[] = await this.prisma.images.findMany({
       where: {
         name: { contains: searchKeyword },
-        created_by_id: userID,
+        created_by_id: userID || undefined,
         is_remove: 'false',
+      },
+      select: {
+        ...this.responseTemplate.image(['created_by_id']),
+        created_by: {
+          select: this.responseTemplate.user(['password']),
+        },
       },
     });
     return data;
   }
 
-  async findOne(id: number) {
-    let image = await this.prisma.images.findUnique({
+  async findOne(id: number): Promise<Image> {
+    const image: Image = await this.prisma.images.findUnique({
       where: { id },
+      select: {
+        ...this.responseTemplate.image(['created_by_id']),
+        created_by: { select: this.responseTemplate.user(['password']) },
+      },
     });
 
     if (image) {
@@ -42,21 +53,26 @@ export class ImagesService {
     }
   }
 
-  async update(id: number, updateImage: UpdateImageDto) {
-    let updatedImage = await this.prisma.images.update({
+  async update(id: number, updateImage: UpdateImageDto): Promise<Image> {
+    await this.findOne(id);
+
+    const updatedImage: Image = await this.prisma.images.update({
       where: { id },
       data: updateImage,
+      select: {
+        ...this.responseTemplate.image(['created_by_id']),
+        created_by: { select: this.responseTemplate.user(['password']) },
+      },
     });
 
     return updatedImage;
   }
 
-  async remove(id: number) {
-    let image = await this.prisma.images.update({
+  async remove(id: number): Promise<Image> {
+    const image: Image = await this.prisma.images.update({
       where: { id },
       data: { is_remove: 'true' },
     });
-    console.log(image);
     return image;
   }
 }

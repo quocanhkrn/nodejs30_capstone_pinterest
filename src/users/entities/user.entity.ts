@@ -1,7 +1,9 @@
 export class User {
-  fullname: string;
+  id: number;
+  full_name: string;
   age: number;
   email: string;
-  password: string;
+  password?: string;
   avatar: string;
+  is_remove?: 'true' | 'false';
 }

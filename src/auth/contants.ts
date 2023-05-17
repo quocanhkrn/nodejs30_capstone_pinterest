@@ -1,4 +1,0 @@
-export const jwtContants = {
-  secret: `eyJhbGciOiJIUzUxMiJ9.eyJSb2xlIjoiQWRtaW4iLCJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkphdmFJblVzZSIsImV4cCI6MTY4NDIwODY5NywiaWF0IjoxNjg0MjA4Njk3fQ.6da9kcYHkp5U5a9WxtqnUkQXtcSd__lrUFE-JAzOUik32b5P0JuQKilEFurk5bIh7fTDCx57XWLxEEnucpIHDw
-  `,
-};

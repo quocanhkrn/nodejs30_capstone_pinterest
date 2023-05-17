@@ -3,55 +3,54 @@ import {
   Get,
   Post,
   Body,
-  Patch,
-  Param,
   Delete,
-  InternalServerErrorException,
   Query,
+  Param,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
 import { CommentsService } from './comments.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
-import { UpdateCommentDto } from './dto/update-comment.dto';
+import { JwtAuthGuard } from 'src/auth/strategies/guards/jwt-auth.guard';
+import { handleErr } from '../constants';
 
+@UseGuards(JwtAuthGuard)
 @Controller('comments')
 export class CommentsController {
   constructor(private readonly commentsService: CommentsService) {}
 
   @Post('post-comment')
-  async create(@Body() comment: CreateCommentDto) {
+  async create(@Body() comment: CreateCommentDto, @Request() req) {
     try {
-      let postedComment = await this.commentsService.create({
+      const user = req.user.data;
+      const postedComment = await this.commentsService.create({
         ...comment,
+        created_by_id: user.id,
         date: new Date(),
       });
       return { message: 'Successfully posted!', data: postedComment };
     } catch (err) {
-      throw new InternalServerErrorException();
+      handleErr(err);
     }
   }
 
   @Get('get-comments')
   async findAll(@Query('imageID') imageID: string) {
     try {
-      let data = await this.commentsService.findAll(+imageID);
+      const data = await this.commentsService.findAll(+imageID);
       return { message: 'Successfully!', data };
     } catch (err) {
-      throw new InternalServerErrorException();
+      handleErr(err);
     }
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.commentsService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateCommentDto: UpdateCommentDto) {
-    return this.commentsService.update(+id, updateCommentDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.commentsService.remove(+id);
+  @Delete('delete/:id')
+  async deleteComment(@Param('id') id: string) {
+    try {
+      await this.commentsService.delete(+id);
+      return { message: 'Successfully deleted!' };
+    } catch (err) {
+      handleErr(err);
+    }
   }
 }

@@ -6,6 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { AuthService } from '../auth.service';
+import { handleErr } from '../../constants';
 
 @Injectable()
 export class SignInStrategy extends PassportStrategy(Strategy, 'sign-in') {
@@ -24,11 +25,7 @@ export class SignInStrategy extends PassportStrategy(Strategy, 'sign-in') {
         throw new UnauthorizedException();
       }
     } catch (err) {
-      if (err) {
-        throw err;
-      } else {
-        throw new InternalServerErrorException();
-      }
+      handleErr(err);
     }
   }
 }

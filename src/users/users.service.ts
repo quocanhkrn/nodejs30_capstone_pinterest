@@ -1,37 +1,33 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaClient } from '@prisma/client';
+import { ResponseTemplate } from 'src/response.typeface';
+import { User } from './entities/user.entity';
 
 @Injectable()
 export class UsersService {
-  prisma = new PrismaClient();
+  private readonly prisma = new PrismaClient();
+  private readonly responseTemplate = new ResponseTemplate();
 
-  async create(newUser: CreateUserDto) {
-    let { full_name, age, email, password, avatar } = newUser;
-    let user = await this.prisma.users.create({
-      data: { full_name, age, email, password },
-    });
-    return user;
-  }
-
-  async uploadAvatar(userID: number, avatarFileName: string) {
-    let user = await this.findOne(userID);
-    user.avatar = avatarFileName;
-    let data = await this.update(userID, user);
+  async removeAvatar(userID: number): Promise<User> {
+    let user: User = await this.findOne(userID);
+    user.avatar = null;
+    const data: User = await this.update(userID, user);
     return data;
   }
 
-  async findAll() {
-    let data = await this.prisma.users.findMany({
-      where: { is_remove: 'false' },
+  async find(id: number): Promise<User[]> {
+    const data: User[] = await this.prisma.users.findMany({
+      where: { id: id || undefined, is_remove: 'false' },
+      select: this.responseTemplate.user(['password']),
     });
     return data;
   }
 
-  async findOne(id: number) {
-    let user = await this.prisma.users.findUnique({
+  async findOne(id: number): Promise<User> {
+    const user: User = await this.prisma.users.findUnique({
       where: { id },
+      select: this.responseTemplate.user(['password']),
     });
 
     if (user) {
@@ -41,23 +37,28 @@ export class UsersService {
     }
   }
 
-  async findOneByEmail(email: string) {
-    let user = await this.prisma.users.findFirst({ where: { email } });
-    return user;
-  }
-
-  async update(id: number, updateUser: UpdateUserDto) {
-    let user = this.prisma.users.update({
-      where: { id },
-      data: updateUser,
+  async findOneByEmail(email: string): Promise<User> {
+    const user: User = await this.prisma.users.findFirst({
+      where: { email },
+      select: this.responseTemplate.user(['password']),
     });
     return user;
   }
 
-  async remove(id: number) {
-    let user = await this.prisma.users.update({
+  async update(id: number, updateUser: UpdateUserDto): Promise<User> {
+    const user: User = await this.prisma.users.update({
+      where: { id },
+      data: updateUser,
+      select: this.responseTemplate.user(['password']),
+    });
+    return user;
+  }
+
+  async remove(id: number): Promise<User> {
+    const user: User = await this.prisma.users.update({
       where: { id },
       data: { is_remove: 'true' },
+      select: this.responseTemplate.user(['password']),
     });
     return user;
   }

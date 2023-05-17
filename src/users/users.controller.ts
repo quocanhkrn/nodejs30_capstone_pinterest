@@ -1,132 +1,83 @@
 import {
   Controller,
   Get,
-  Post,
+  Put,
   Body,
-  Patch,
-  Param,
   Delete,
-  InternalServerErrorException,
-  BadRequestException,
+  UseGuards,
   UseInterceptors,
   UploadedFile,
+  Request,
+  Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { HttpException, HttpStatus, NotFoundException } from '@nestjs/common';
-import { diskStorage } from 'multer';
+import { NotFoundException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { imageUploadOptions } from 'src/constants';
+import { JwtAuthGuard } from 'src/auth/strategies/guards/jwt-auth.guard';
+import { handleErr } from '../constants';
+import { User } from './entities/user.entity';
 
-const fileUploadOptions = {
-  storage: diskStorage({
-    destination: './public/imgs',
-    filename: (req, file, callback) => {
-      callback(null, Date.now() + '_' + file.originalname);
-    },
-  }),
-  fileFilter: (req, file, callback) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
-    if (!allowedTypes.includes(file.mimetype)) {
-      const error = new BadRequestException('Not supported filetype!');
-      return callback(error, false);
-    }
-    callback(null, true);
-  },
-};
-
+@UseGuards(JwtAuthGuard)
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Post('new-user')
-  async create(@Body() newUser: CreateUserDto) {
+  @Get('get-user')
+  async findAll(@Query('id') id: string) {
     try {
-      let existedUser = await this.usersService.findOneByEmail(newUser.email);
-      if (existedUser) {
-        throw new HttpException(
-          'This email is existed!',
-          HttpStatus.BAD_REQUEST,
-        );
-      } else {
-        let data = await this.usersService.create(newUser);
-        return { message: 'Successfully created!', data };
-      }
-    } catch (err) {
-      if (err) {
-        throw err;
-      } else {
-        throw new InternalServerErrorException();
-      }
-    }
-  }
-
-  @Post('upload-avatar')
-  @UseInterceptors(FileInterceptor('image', fileUploadOptions))
-  async uploadAvatar(
-    @Body('userID') userID: number,
-    @UploadedFile() image: Express.Multer.File,
-  ) {
-    try {
-      let data = await this.usersService.uploadAvatar(userID, image.filename);
-      return { message: 'Successfully updated your avatar!', data };
-    } catch (err) {}
-  }
-
-  @Get('get-users')
-  async findAll() {
-    try {
-      let data = await this.usersService.findAll();
+      const data: User[] = await this.usersService.find(+id);
       return { message: 'Succesfully!', data };
     } catch (err) {
-      if (err) {
-        throw err;
-      } else {
-        throw new InternalServerErrorException();
-      }
+      handleErr(err);
     }
   }
 
-  @Get('get-user/:id')
-  async findOne(@Param('id') id: string) {
+  @Put('update-user')
+  @UseInterceptors(FileInterceptor('image', imageUploadOptions))
+  async update(
+    @Request() req,
+    @UploadedFile() image: Express.Multer.File,
+    @Body() updateUser: UpdateUserDto,
+  ) {
+    const user = req.user.data;
     try {
-      let user = await this.usersService.findOne(+id);
-      return { message: 'Succesfully!', data: user };
+      const data: User = await this.usersService.update(user.id, {
+        ...updateUser,
+        age: +updateUser.age || undefined,
+        avatar: image?.filename,
+      });
+      return { message: 'Successfully updated!', data };
     } catch (err) {
-      if (err) {
-        throw err;
-      } else {
-        throw new InternalServerErrorException();
-      }
+      handleErr(err);
     }
   }
 
-  @Patch('update-user/:id')
-  async update(@Param('id') id: string, @Body() updateUser: UpdateUserDto) {
+  @Delete('remove-avatar')
+  async removeAvatar(@Request() req) {
+    const user = req.user.data;
     try {
-      await this.usersService.update(+id, updateUser);
-      return { message: 'Successfully updated!' };
+      const data: User = await this.usersService.removeAvatar(+user.id);
+      return { message: 'Successfully removed your avatar!', data };
     } catch (err) {
-      throw new InternalServerErrorException();
+      handleErr(err);
     }
   }
 
-  @Delete('delete-user/:id')
-  async remove(@Param('id') id: string) {
+  @Delete('delete-user')
+  async remove(@Request() req) {
+    const user = req.user.data;
     try {
-      let existedUser = await this.usersService.findOne(+id);
+      const existedUser: User = await this.usersService.findOne(+user.id);
       if (existedUser) {
-        await this.usersService.remove(+id);
+        await this.usersService.remove(+user.id);
         return { message: 'Successfully deleted!' };
       } else {
         throw new NotFoundException();
       }
     } catch (err) {
-      if (err) {
-        throw err;
-      } else {
-        throw new InternalServerErrorException();
-      }
+      handleErr(err);
     }
   }
 }

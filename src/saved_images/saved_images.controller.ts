@@ -2,25 +2,35 @@ import {
   Controller,
   Get,
   Post,
-  Body,
+  Param,
+  Request,
   InternalServerErrorException,
+  UseGuards,
 } from '@nestjs/common';
 import { SavedImagesService } from './saved_images.service';
-import { CreateSavedImageDto } from './dto/create-saved_image.dto';
+import { JwtAuthGuard } from 'src/auth/strategies/guards/jwt-auth.guard';
 
+@UseGuards(JwtAuthGuard)
 @Controller('images')
 export class SavedImagesController {
   constructor(private readonly savedImagesService: SavedImagesService) {}
 
-  @Post('save')
-  async create(@Body() saveRequest: CreateSavedImageDto) {
+  @Post('save/:imageID')
+  async create(@Request() req, @Param('imageID') imageID: number) {
+    const user = req.user.data;
     try {
-      const data = await this.savedImagesService.findOne(saveRequest);
+      const data = await this.savedImagesService.findOne({
+        image_id: +imageID,
+        saved_by_id: user.id,
+      });
       if (data) {
         await this.savedImagesService.remove(data.id);
         return { message: 'Successfully unsaved!' };
       } else {
-        let data = await this.savedImagesService.create(saveRequest);
+        let data = await this.savedImagesService.create({
+          image_id: +imageID,
+          saved_by_id: user.id,
+        });
         return { message: 'Successfully saved!', data };
       }
     } catch (err) {

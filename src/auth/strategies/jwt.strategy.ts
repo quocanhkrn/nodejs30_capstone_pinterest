@@ -1,7 +1,6 @@
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable } from '@nestjs/common';
-import { jwtContants } from '../contants';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'local') {
@@ -11,11 +10,12 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'local') {
         ExtractJwt.fromHeader('token'),
       ]),
       ignoreExpiration: false,
-      secretOrKey: jwtContants.secret,
+      secretOrKey: process.env.SECRET_KEY,
     });
   }
 
   async validate(decodedToken: any) {
-    return decodedToken;
+    const { password, is_removed, ...data } = decodedToken;
+    return data;
   }
 }

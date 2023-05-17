@@ -5,10 +5,12 @@ import { SignInStrategy } from './strategies/signin.strategy';
 import { PassportModule } from '@nestjs/passport';
 import { UsersService } from 'src/users/users.service';
 import { JwtModule } from '@nestjs/jwt';
-import { jwtContants } from './contants';
 
 @Module({
-  imports: [PassportModule, JwtModule.register({ secret: jwtContants.secret })],
+  imports: [
+    PassportModule,
+    JwtModule.register({ secret: process.env.SECRET_KEY }),
+  ],
   controllers: [AuthController],
   providers: [AuthService, UsersService, SignInStrategy],
 })

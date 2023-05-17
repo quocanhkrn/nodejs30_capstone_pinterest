@@ -1,34 +1,42 @@
 import { Injectable } from '@nestjs/common';
 import { CreateCommentDto } from './dto/create-comment.dto';
-import { UpdateCommentDto } from './dto/update-comment.dto';
 import { PrismaClient } from '@prisma/client';
+import { ResponseTemplate } from 'src/response.typeface';
+import { Comment } from './entities/comment.entity';
 
 @Injectable()
 export class CommentsService {
   private readonly prisma = new PrismaClient();
+  private readonly responseTemplate = new ResponseTemplate();
 
-  async create(comment: CreateCommentDto) {
-    let postedComment = await this.prisma.comments.create({ data: comment });
-    return postedComment;
-  }
-
-  async findAll(imageID: number = undefined) {
-    let data = await this.prisma.comments.findMany({
-      where: imageID ? { image_id: imageID } : undefined,
-      include: { created_by: true },
+  async create(comment: CreateCommentDto): Promise<Comment> {
+    const { is_remove, ...data }: Comment = await this.prisma.comments.create({
+      data: comment,
     });
     return data;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} comment`;
+  async findAll(imageID: number = undefined): Promise<Comment[]> {
+    const data: Comment[] = await this.prisma.comments.findMany({
+      where: {
+        image_id: imageID || undefined,
+        is_remove: 'false',
+      },
+      select: {
+        ...this.responseTemplate.comment(['created_by_id']),
+        created_by: {
+          select: { ...this.responseTemplate.user(['password']) },
+        },
+      },
+    });
+    return data;
   }
 
-  update(id: number, updateCommentDto: UpdateCommentDto) {
-    return `This action updates a #${id} comment`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} comment`;
+  async delete(id: number): Promise<Comment> {
+    const data: Comment = await this.prisma.comments.update({
+      where: { id },
+      data: { is_remove: 'true' },
+    });
+    return data;
   }
 }
