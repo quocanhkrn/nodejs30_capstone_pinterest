@@ -2,12 +2,12 @@ import {
   Controller,
   Get,
   Put,
+  Param,
   Body,
   Delete,
   UseGuards,
   UseInterceptors,
   UploadedFile,
-  Request,
   Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
@@ -18,13 +18,25 @@ import { imageUploadOptions } from 'src/constants';
 import { JwtAuthGuard } from 'src/auth/strategies/guards/jwt-auth.guard';
 import { handleErr } from '../constants';
 import { User } from './entities/user.entity';
+import { ApiHeader, ApiQuery, ApiTags, ApiConsumes } from '@nestjs/swagger';
 
+@ApiTags('Users')
+@ApiHeader({
+  name: 'token',
+  description: 'Authorized token',
+  required: true,
+})
 @UseGuards(JwtAuthGuard)
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Get('get-user')
+  @ApiQuery({
+    name: 'id',
+    description: 'Leave it blank if you want to get all the data',
+    required: false,
+  })
+  @Get('get')
   async findAll(@Query('id') id: string) {
     try {
       const data: User[] = await this.usersService.find(+id);
@@ -34,16 +46,15 @@ export class UsersController {
     }
   }
 
-  @Put('update-user')
+  @Put('update/:id')
   @UseInterceptors(FileInterceptor('image', imageUploadOptions))
   async update(
-    @Request() req,
     @UploadedFile() image: Express.Multer.File,
     @Body() updateUser: UpdateUserDto,
+    @Param('id') id: number,
   ) {
-    const user = req.user.data;
     try {
-      const data: User = await this.usersService.update(user.id, {
+      const data: User = await this.usersService.update(+id, {
         ...updateUser,
         age: +updateUser.age || undefined,
         avatar: image?.filename,
@@ -54,24 +65,22 @@ export class UsersController {
     }
   }
 
-  @Delete('remove-avatar')
-  async removeAvatar(@Request() req) {
-    const user = req.user.data;
+  @Delete('remove-avatar/:id')
+  async removeAvatar(@Param('id') id: number) {
     try {
-      const data: User = await this.usersService.removeAvatar(+user.id);
+      const data: User = await this.usersService.removeAvatar(+id);
       return { message: 'Successfully removed your avatar!', data };
     } catch (err) {
       handleErr(err);
     }
   }
 
-  @Delete('delete-user')
-  async remove(@Request() req) {
-    const user = req.user.data;
+  @Delete('delete/:id')
+  async remove(@Param('id') id: number) {
     try {
-      const existedUser: User = await this.usersService.findOne(+user.id);
+      const existedUser: User = await this.usersService.findOne(+id);
       if (existedUser) {
-        await this.usersService.remove(+user.id);
+        await this.usersService.remove(+id);
         return { message: 'Successfully deleted!' };
       } else {
         throw new NotFoundException();

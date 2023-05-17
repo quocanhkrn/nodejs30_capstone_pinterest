@@ -2,7 +2,6 @@ import {
   Controller,
   Post,
   Body,
-  InternalServerErrorException,
   Request,
   UseGuards,
   HttpException,
@@ -14,7 +13,10 @@ import { AuthService } from './auth.service';
 import { UsersService } from 'src/users/users.service';
 import { User } from 'src/users/entities/user.entity';
 import { handleErr } from '../constants';
+import { ApiTags, ApiBody } from '@nestjs/swagger';
+import { SignInDto } from './dto/signin.dto';
 
+@ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -23,6 +25,7 @@ export class AuthController {
     private readonly jwtService: JwtService,
   ) {}
 
+  @ApiBody({ type: SignInDto })
   @UseGuards(AuthGuard('sign-in'))
   @Post('signin')
   signIn(@Request() req) {

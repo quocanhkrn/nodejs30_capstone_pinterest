@@ -23,33 +23,28 @@ import { JwtAuthGuard } from 'src/auth/strategies/guards/jwt-auth.guard';
 import { handleErr, imageUploadOptions } from 'src/constants';
 import { Image } from './entities/image.entity';
 import * as path from 'path';
+import {
+  ApiTags,
+  ApiHeader,
+  ApiQuery,
+  ApiExcludeEndpoint,
+  ApiBody,
+} from '@nestjs/swagger';
 
+@ApiTags('Images')
+@ApiHeader({
+  name: 'token',
+  description: 'Authorized token',
+  required: true,
+})
 @UseGuards(JwtAuthGuard)
 @Controller('images')
 export class ImagesController {
   constructor(private readonly imagesService: ImagesService) {}
 
-  @Post('upload-image')
-  @UseInterceptors(FileInterceptor('image', imageUploadOptions))
-  async create(
-    @Request() req,
-    @Body() imageInfo: CreateImageDto,
-    @UploadedFile() uploadedImage: Express.Multer.File,
-  ) {
-    try {
-      const user = req.user.data;
-      const image: Image = await this.imagesService.create({
-        ...imageInfo,
-        created_by_id: user.id,
-        file_name: uploadedImage.filename,
-      });
-      return { message: 'Successfully uploaded!', data: image };
-    } catch (err) {
-      handleErr(err);
-    }
-  }
-
-  @Get('get-images')
+  @ApiQuery({ name: 'byUser', required: false })
+  @ApiQuery({ name: 'search', required: false })
+  @Get('get')
   async findAll(
     @Query('byUser') byUser: string,
     @Query('search') searchKeyword: string,
@@ -65,7 +60,7 @@ export class ImagesController {
     }
   }
 
-  @Get('get-image/:id')
+  @Get('get/:id')
   async findOne(@Param('id') id: string) {
     try {
       const image: Image = await this.imagesService.findOne(+id);
@@ -75,12 +70,32 @@ export class ImagesController {
     }
   }
 
-  @Get(':fileName')
-  sendImage(@Param('fileName') fileName: string, @Res() res) {
-    return res.sendFile(path.join(process.cwd(), 'public/imgs/' + fileName));
+  // @ApiExcludeEndpoint()
+  // @Get(':fileName')
+  // sendImage(@Param('fileName') fileName: string, @Res() res) {
+  //   return res.sendFile(path.join(process.cwd(), 'public/imgs/' + fileName));
+  // }
+
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('image', imageUploadOptions))
+  async create(
+    @Body() imageInfo: CreateImageDto,
+    @UploadedFile() uploadedImage: Express.Multer.File,
+  ) {
+    try {
+      const image: Image = await this.imagesService.create({
+        ...imageInfo,
+        created_by_id: +imageInfo.created_by_id,
+        file_name: uploadedImage.filename,
+      });
+      return { message: 'Successfully uploaded!', data: image };
+    } catch (err) {
+      handleErr(err);
+    }
   }
 
-  @Put('update-image/:id')
+  @ApiBody({ type: CreateImageDto })
+  @Put('update/:id')
   async update(@Param('id') id: string, @Body() updateImage: UpdateImageDto) {
     try {
       const image: Image = await this.imagesService.update(+id, updateImage);
@@ -90,7 +105,7 @@ export class ImagesController {
     }
   }
 
-  @Delete('delete-image')
+  @Delete('delete/:id')
   async remove(@Param('id') id: string) {
     try {
       const existedImage: Image = await this.imagesService.findOne(+id);

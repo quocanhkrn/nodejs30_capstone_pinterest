@@ -13,32 +13,38 @@ import { CommentsService } from './comments.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { JwtAuthGuard } from 'src/auth/strategies/guards/jwt-auth.guard';
 import { handleErr } from '../constants';
+import { ApiTags, ApiHeader, ApiQuery } from '@nestjs/swagger';
 
+@ApiTags('Comments')
+@ApiHeader({
+  name: 'token',
+  description: 'Authorized token',
+  required: true,
+})
 @UseGuards(JwtAuthGuard)
 @Controller('comments')
 export class CommentsController {
   constructor(private readonly commentsService: CommentsService) {}
 
-  @Post('post-comment')
-  async create(@Body() comment: CreateCommentDto, @Request() req) {
+  @ApiQuery({ name: 'imageID', description: 'Leave it blank to get all data' })
+  @Get('get')
+  async findAll(@Query('imageID') imageID: string) {
     try {
-      const user = req.user.data;
-      const postedComment = await this.commentsService.create({
-        ...comment,
-        created_by_id: user.id,
-        date: new Date(),
-      });
-      return { message: 'Successfully posted!', data: postedComment };
+      const data = await this.commentsService.findAll(+imageID);
+      return { message: 'Successfully!', data };
     } catch (err) {
       handleErr(err);
     }
   }
 
-  @Get('get-comments')
-  async findAll(@Query('imageID') imageID: string) {
+  @Post('post')
+  async create(@Body() comment: CreateCommentDto) {
     try {
-      const data = await this.commentsService.findAll(+imageID);
-      return { message: 'Successfully!', data };
+      const postedComment = await this.commentsService.create({
+        ...comment,
+        date: new Date(),
+      });
+      return { message: 'Successfully posted!', data: postedComment };
     } catch (err) {
       handleErr(err);
     }

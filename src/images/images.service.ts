@@ -34,7 +34,7 @@ export class ImagesService {
         },
       },
     });
-    return data;
+    return { ...data };
   }
 
   async findOne(id: number): Promise<Image> {
@@ -58,7 +58,7 @@ export class ImagesService {
 
     const updatedImage: Image = await this.prisma.images.update({
       where: { id },
-      data: updateImage,
+      data: { ...updateImage },
       select: {
         ...this.responseTemplate.image(['created_by_id']),
         created_by: { select: this.responseTemplate.user(['password']) },
