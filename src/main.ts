@@ -8,7 +8,7 @@ import { SwaggerModule } from '@nestjs/swagger/dist';
 async function bootstrap() {
   dotenv.config();
   const app = await NestFactory.create(AppModule);
-  app.use(Express.static('.'));
+  app.use(Express.static('public'));
 
   const config = new DocumentBuilder()
     .setTitle('CAPSTONE NODEJS - PINTEREST PROJECT')

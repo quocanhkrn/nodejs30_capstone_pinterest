@@ -5,9 +5,7 @@ import {
   Post,
   Body,
   Param,
-  Request,
   Put,
-  Res,
   Query,
   Delete,
   UploadedFile,
@@ -22,15 +20,14 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from 'src/auth/strategies/guards/jwt-auth.guard';
 import { handleErr, imageUploadOptions } from 'src/constants';
 import { Image } from './entities/image.entity';
-import * as path from 'path';
 import {
   ApiTags,
   ApiHeader,
   ApiQuery,
-  ApiExcludeEndpoint,
   ApiBody,
   ApiConsumes,
 } from '@nestjs/swagger';
+import * as path from 'path';
 
 @ApiTags('Images')
 @ApiHeader({
@@ -71,12 +68,6 @@ export class ImagesController {
     }
   }
 
-  // @ApiExcludeEndpoint()
-  // @Get(':fileName')
-  // sendImage(@Param('fileName') fileName: string, @Res() res) {
-  //   return res.sendFile(path.join(process.cwd(), 'public/imgs/' + fileName));
-  // }
-
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -99,7 +90,11 @@ export class ImagesController {
       const image: Image = await this.imagesService.create({
         ...imageInfo,
         created_by_id: +imageInfo.created_by_id,
-        file_name: uploadedImage.filename,
+        file_name: path.join(
+          `${process.env.DOMAIN}:${process.env.PORT}`,
+          'imgs',
+          uploadedImage.filename,
+        ),
       });
       return { message: 'Successfully uploaded!', data: image };
     } catch (err) {

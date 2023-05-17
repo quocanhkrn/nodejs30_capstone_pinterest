@@ -25,6 +25,7 @@ import {
   ApiConsumes,
   ApiBody,
 } from '@nestjs/swagger';
+import * as path from 'path';
 
 @ApiTags('Users')
 @ApiHeader({
@@ -79,7 +80,13 @@ export class UsersController {
       const data: User = await this.usersService.update(+id, {
         ...updateUser,
         age: +updateUser.age || undefined,
-        avatar: image?.filename,
+        avatar:
+          image &&
+          path.join(
+            `${process.env.DOMAIN}:${process.env.PORT}`,
+            'imgs',
+            image.filename,
+          ),
       });
       return { message: 'Successfully updated!', data };
     } catch (err) {
